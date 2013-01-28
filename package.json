@@ -1,0 +1,24 @@
+{
+  "name": "dazeus-bullshit",
+  "version": "0.1.0",
+  "description": "Generates random bullshit",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:rnijveld/dazeus-bullshit.git"
+  },
+  "keywords": [
+    "dazeus",
+    "irc",
+    "bullshit"
+  ],
+  "author": "Ruben Nijveld <ruben@gewooniets.nl>",
+  "license": "BSD",
+  "dependencies": {
+    "dazeus": "",
+    "js-methods": ""
+  }
+}
