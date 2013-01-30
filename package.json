@@ -1,6 +1,6 @@
 {
-  "name": "dazeus-bullshit",
-  "version": "0.1.0",
+  "name": "dazeus-plugin-bullshit",
+  "version": "0.2.0",
   "description": "Generates random bullshit",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:rnijveld/dazeus-bullshit.git"
+    "url": "git@github.com:dazeus/dazeus-plugin-bullshit.git"
   },
   "keywords": [
     "dazeus",
@@ -18,7 +18,7 @@
   "author": "Ruben Nijveld <ruben@gewooniets.nl>",
   "license": "BSD",
   "dependencies": {
-    "dazeus": "",
+    "dazeus": ">=0.3.2",
     "js-methods": ""
   }
 }

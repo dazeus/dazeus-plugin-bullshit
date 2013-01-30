@@ -43,3 +43,7 @@ users
 vortals
 web services
 functor
+graphene
+functoids
+monoids
+diploids

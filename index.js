@@ -1,128 +1,99 @@
 require('js-methods');
 var dazeus = require("dazeus");
-var fs = require('fs');
+
+// some constants and messages
+var BULLSHIT = 'bullshit';
+var ADD = 'add';
+var REMOVE = 'remove';
+var NOUN = 'noun';
+var VERB = 'verb';
+var ADJECTIVE = 'adjective';
 
 var NOUNS = 'data/nouns.txt';
 var VERBS = 'data/verbs.txt';
 var ADJECTIVES = 'data/adjectives.txt';
 
-var client = dazeus.connect({path: '/tmp/dazeus.sock'}, function () {
-    client.onCommand('bullshit', function (network, user, channel, command, args, action, what, word) {
-        args = args.trim();
-        if (typeof action !== 'undefined' && typeof what !== 'undefined' && typeof word !== 'undefined') {
-            var file = '';
-            if (what === 'verb') {
-                file = VERBS;
-            } else if (what === 'noun') {
-                file = NOUNS;
-            } else if (what === 'adjective') {
-                file = ADJECTIVES;
+// lets parse command line args
+var argv = dazeus.optimist().argv;
+dazeus.help(argv);
+var options = dazeus.optionsFromArgv(argv);
+
+var client = dazeus.connect(options, function () {
+    client.onCommand(BULLSHIT, function (network, user, channel, command, args, action) {
+        if (typeof action !== 'undefined') {
+            var commandExecuted = false;
+
+            if (addTry(NOUN, NOUNS, args, client, network, channel, user)) {
+                commandExecuted = true;
             }
 
-            if (file.length > 0) {
-                var rest = objToArray(arguments);
-                rest.splice(0, 7);
-                word = rest.join(' ');
-
-                if (action === 'add') {
-                    if (append(word, file)) {
-                        client.reply(network, channel, user, "Added " + word + " to " + what + "s");
-                    } else {
-                        client.reply(network, channel, user, "Already exists");
-                    }
-                } else if (action === 'remove') {
-                    if (remove(word, file)) {
-                        client.reply(network, channel, user, "Removed " + word + " from " + what + "s");
-                    } else {
-                        client.reply(network, channel, user, "Doesn't exist");
-                    }
-                } else {
-                    client.reply(network, channel, user, "Use }bullshit add [verb,adjective,noun] [word]");
-                }
-            } else {
-                client.reply(network, channel, user, "Use }bullshit add [verb,adjective,noun] [word]");
+            if (addTry(VERB, VERBS, args, client, network, channel, user)) {
+                commandExecuted = true;
             }
-        } else {
-            if (typeof action === 'undefined' && typeof what === 'undefined' && typeof word === 'undefined') {
-                var verb = randomFrom(VERBS);
-                var noun = randomFrom(NOUNS);
-                var adj = randomFrom(ADJECTIVES);
 
+            if (addTry(ADJECTIVE, ADJECTIVES, args, client, network, channel, user)) {
+                commandExecuted = true;
+            }
+
+            if (removeTry(NOUN, NOUNS, args, client, network, channel, user)) {
+                commandExecuted = true;
+            }
+
+            if (removeTry(VERB, VERBS, args, client, network, channel, user)) {
+                commandExecuted = true;
+            }
+
+            if (removeTry(ADJECTIVE, ADJECTIVES, args, client, network, channel, user)) {
+                commandExecuted = true;
+            }
+
+            if (!commandExecuted) {
                 client.reply(
                     network,
                     channel,
                     user,
-                    verb + ' ' + adj + ' ' + noun,
-                    false
+                    "Use }bullshit [" + ADD + ", " + REMOVE +
+                    "] [" + VERB + ", " + ADJECTIVE + ", " + NOUN +
+                    "] [word]"
                 );
-            } else {
-                client.reply(network, channel, user, "Use }bullshit add [verb,adjective,noun] [word]");
             }
+        } else {
+            var verb = dazeus.randomFrom(VERBS);
+            var noun = dazeus.randomFrom(NOUNS);
+            var adj = dazeus.randomFrom(ADJECTIVES);
+            client.reply(network, channel, user, verb + ' ' + adj + ' ' + noun, false);
         }
     });
 });
 
-var randomFrom = function (file) {
-    var array = readFile(file);
-    return array[Math.floor(Math.random() * array.length)];
-};
-
-var readFile = function (file) {
-    var fs = require('fs');
-    return fs.readFileSync(file).toString().split("\n").filter(function (element) {
-        return element.trim().length > 0;
-    });
-};
-
-var writeFile = function (data, file) {
-    var stream = fs.createWriteStream(file, {flags: 'w'});
-    for (var i in data) {
-        if (data.hasOwnProperty(i)) {
-            if (typeof data[i] === 'string') {
-                stream.write(data[i] + "\n");
+/** Check if this is a certain type of add, and if so: execute it */
+var addTry = function (what, file, args, client, network, channel, user) {
+    var ret = false;
+    dazeus.isCommand([ADD, what], args, function (word) {
+        if (word.trim().length > 0) {
+            ret = true;
+            if (dazeus.appendTo(file, word)) {
+                client.reply(network, channel, user, "Added " + word + " to " + what + "s");
+            } else {
+                client.reply(network, channel, user, "Already exists");
             }
         }
-    }
-    stream.end();
+    });
+    return ret;
 };
 
-var append = function (word, file) {
-    var array = readFile(file);
-    if (exists(word, file)) {
-        return false;
-    } else {
-        array.push(word);
-        writeFile(array, file);
-        return true;
-    }
-};
-
-var remove = function (word, file) {
-    var array = readFile(file);
-    if (!exists(word, array)) {
-        return false;
-    } else {
-        array = array.filter(function (elem) {
-            return elem !== word;
-        });
-        writeFile(array, file);
-        return true;
-    }
-};
-
-var exists = function (word, file) {
-    if (typeof file === 'string') {
-        file = readFile(file);
-    }
-    return file.inArray(word);
-};
-
-var objToArray = function (obj) {
-    var data = [];
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            data.push(obj[key]);
+/** Check if this is a certain type of remove, and if so: execute it */
+var removeTry = function (what, file, args, client, network, channel, user) {
+    var ret = false;
+    dazeus.isCommand([REMOVE, what], args, function (word) {
+        if (word.trim().length > 0) {
+            ret = true;
+            if (dazeus.removeFrom(file, word)) {
+                client.reply(network, channel, user, "Removed " + word + " from " + what + "s");
+            } else {
+                client.reply(network, channel, user, "Doesn't exist");
+            }
         }
-    }
-    return data;
+    });
+    return ret;
 };
