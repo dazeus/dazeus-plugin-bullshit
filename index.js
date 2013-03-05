@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 require('js-methods');
 var dazeus = require("dazeus");
 

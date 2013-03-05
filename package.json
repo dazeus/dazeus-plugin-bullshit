@@ -1,6 +1,6 @@
 {
   "name": "dazeus-plugin-bullshit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Generates random bullshit",
   "main": "index.js",
   "scripts": {
