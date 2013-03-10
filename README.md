@@ -8,7 +8,7 @@ Display some bullshit
 
 Add more bullshit
 
-    }bullshit add [verb,adjective,noun] [word]
+    }bullshit learn
 
 Remove some bullshit
 
@@ -26,3 +26,12 @@ To let this command run, simple execute this command in the root folder of the p
 Several options are available, see the command line documentation for that:
 
     node index --help
+
+
+bullshit
+bullshit about [what]
+bullshit learn [type] [word] about [what]
+bullshit forget [type] [word] about [what]
+bullshit forget [word] about [what]
+bullshit forget [word]
+bullshit alias [what] to [what]
