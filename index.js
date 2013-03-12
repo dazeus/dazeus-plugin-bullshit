@@ -18,8 +18,6 @@ var HELP = 'help';
 var ANYTHING = 'anything';
 var EVERYTHING = 'everything';
 
-var CMD_ID = '#!';
-
 var NOT_EXISTS = "Sorry, I don't know any bullshit about %s";
 
 var NAMESFILE = './data/names.txt';
@@ -60,7 +58,10 @@ var client = dazeus.connect(options, function () {
                     break;
             }
         }
-        client.reply(network, channel, user, message.replace(/\{CMD\}/g, CMD_ID + BULLSHIT));
+
+        client.insertCommand(message, BULLSHIT, function (msg) {
+            client.reply(network, channel, user, msg);
+        });
     };
 
     var bullshitAbout = function (network, channel, user, aboutWhat) {
@@ -317,17 +318,21 @@ var loadCorpusLines = function (file, addAll, callback) {
         }
     };
 
-    fs.exists(file, function (ex) {
-        if (ex) {
-            csv().from.path(file, {
-                trim: true
-            }).on('record', onRecord).on('end', function () {
-                onComplete(true);
-            });
-        } else {
-            onComplete(false);
-        }
-    });
+    if (typeof file !== 'string') {
+        onComplete(false);
+    } else {
+        fs.exists(file, function (ex) {
+            if (ex) {
+                csv().from.path(file, {
+                    trim: true
+                }).on('record', onRecord).on('end', function () {
+                    onComplete(true);
+                });
+            } else {
+                onComplete(false);
+            }
+        });
+    }
 };
 
 var getAndBuildCorpus = function (name, callback) {
