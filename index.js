@@ -398,7 +398,7 @@ var addCorpusAlias = function (alias, to, callback) {
                         callback(true, CORPORA + to + CORPUSEXT);
                     });
                 } else {
-                    calback(false);
+                    callback(false);
                 }
             });
         } else {
