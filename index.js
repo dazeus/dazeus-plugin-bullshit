@@ -89,7 +89,7 @@ var client = dazeus.connect(options, function () {
             if (success) {
                 client.reply(network, channel, user, util.format('Added %s (type %s) to %s', word, type, aboutWhat));
             } else {
-                client.reply(network, channel, user, "Already exists");
+                client.reply(network, channel, user, "Already exists or invalid corpus");
             }
         });
     };
@@ -365,46 +365,58 @@ var existsInCorpus = function (corpus, type, what, callback) {
     });
 };
 
-var addToCorpus = function (corpus, type, what, callback) {
-    var updateCorpus = function (file) {
-        fs.appendFile(file, util.format('"%s","%s"\n', escapeCsv(type), escapeCsv(what)), function () {
-            callback(true);
-        });
-    };
+var validCorpus = function (corpus) {
+    return (/^[^\/\\]*$/).test(corpus);
+};
 
-    existsInCorpus(corpus, type, what, function (ex) {
-        if (ex) {
-            callback(false);
-        } else {
-            corpusFile(corpus, function (file) {
-                if (file === false) {
-                    addCorpusAlias(corpus, corpus, function (result, file) {
-                        updateCorpus(file);
-                    });
-                } else {
-                    updateCorpus(file);
-                }
+var addToCorpus = function (corpus, type, what, callback) {
+    if (!validCorpus(corpus)) {
+        callback(false);
+    } else {
+        var updateCorpus = function (file) {
+            fs.appendFile(file, util.format('"%s","%s"\n', escapeCsv(type), escapeCsv(what)), function () {
+                callback(true);
             });
-        }
-    });
+        };
+
+        existsInCorpus(corpus, type, what, function (ex) {
+            if (ex) {
+                callback(false);
+            } else {
+                corpusFile(corpus, function (file) {
+                    if (file === false) {
+                        addCorpusAlias(corpus, corpus, function (result, file) {
+                            updateCorpus(file);
+                        });
+                    } else {
+                        updateCorpus(file);
+                    }
+                });
+            }
+        });
+    }
 };
 
 var addCorpusAlias = function (alias, to, callback) {
-    fs.readFile(NAMESFILE, function (err, result) {
-        if (!err) {
-            fs.writeFile(NAMESFILE, util.format('"%s","%s"\n', escapeCsv(alias), escapeCsv(to)) + result, function (err) {
-                if (!err) {
-                    fs.utimes(CORPORA + to + CORPUSEXT, new Date(), new Date(), function (err) {
-                        callback(true, CORPORA + to + CORPUSEXT);
-                    });
-                } else {
-                    callback(false);
-                }
-            });
-        } else {
-            callback(false);
-        }
-    });
+    if (!validCorpus(alias) || !validCorpus(to)) {
+        callback(false);
+    } else {
+        fs.readFile(NAMESFILE, function (err, result) {
+            if (!err) {
+                fs.writeFile(NAMESFILE, util.format('"%s","%s"\n', escapeCsv(alias), escapeCsv(to)) + result, function (err) {
+                    if (!err) {
+                        fs.utimes(CORPORA + to + CORPUSEXT, new Date(), new Date(), function (err) {
+                            callback(true, CORPORA + to + CORPUSEXT);
+                        });
+                    } else {
+                        callback(false);
+                    }
+                });
+            } else {
+                callback(false);
+            }
+        });
+    }
 };
 
 var escapeCsv = function (str) {
@@ -412,30 +424,34 @@ var escapeCsv = function (str) {
 };
 
 var removeFromCorpus = function (corpus, type, what, callback) {
-    existsInCorpus(corpus, type, what, function (ex) {
-        if (!ex) {
-            callback(false);
-        } else {
-            corpusFile(corpus, function (file) {
-                if (file !== false) {
-                    csv().from.path(file, {
-                        trim: true
-                    }).transform(function (row) {
-                        if ((row[0] === type || type === null) && row[1] === what) {
-                            return null;
-                        } else {
-                            return row;
-                        }
-                    }).to.array(function (data) {
-                        csv().from.array(data).to.path(file, {quoted: true}).on('end', function () {
-                            callback(true);
+    if (!validCorpus(corpus)) {
+        callback(false);
+    } else {
+        existsInCorpus(corpus, type, what, function (ex) {
+            if (!ex) {
+                callback(false);
+            } else {
+                corpusFile(corpus, function (file) {
+                    if (file !== false) {
+                        csv().from.path(file, {
+                            trim: true
+                        }).transform(function (row) {
+                            if ((row[0] === type || type === null) && row[1] === what) {
+                                return null;
+                            } else {
+                                return row;
+                            }
+                        }).to.array(function (data) {
+                            csv().from.array(data).to.path(file, {quoted: true}).on('end', function () {
+                                callback(true);
+                            });
                         });
-                    });
-                }
-            });
+                    }
+                });
 
-        }
-    });
+            }
+        });
+    }
 };
 
 var removeEverywhere = function (type, what, callback) {
